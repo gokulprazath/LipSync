@@ -1,5 +1,7 @@
 # **Wav2Lip**: *Accurately Lip-syncing Videos In The Wild*
 
+Try Running the following [google colab file](https://colab.research.google.com/drive/1gF5agVMA6Arp8XvHi_PRs7MMgxuFUGXv?usp=sharing) for basic lip syncing for better results try retraining the model and preprocess the input data and chage the hyper parameters.
+
 [Original Paper](http://arxiv.org/abs/2008.10010) 
 
 
