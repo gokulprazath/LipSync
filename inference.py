@@ -246,33 +246,29 @@ def main():
 	batch_size = args.wav2lip_batch_size
 	gen = datagen(full_frames.copy(), mel_chunks)
 
-	for i, (img_batch, mel_batch, frames, coords) in enumerate(tqdm(gen,total=int(np.ceil(float(len(mel_chunks))/batch_size)))):
+	for i, (img_batch, mel_batch, frames, coords) in enumerate(tqdm(gen, total=int(np.ceil(float(len(mel_chunks))/batch_size)))):
+		if i == 0:
+			model = load_model(args.checkpoint_path)
+			print ("Model loaded")
+
+			frame_h, frame_w = full_frames[0].shape[:-1]
+			out = cv2.VideoWriter('temp/result.avi',cv2.VideoWriter_fourcc(*'DIVX'), fps, (frame_w, frame_h))
+
+		img_batch = torch.FloatTensor(np.transpose(img_batch, (0, 3, 1, 2))).to(device)
+		mel_batch = torch.FloatTensor(np.transpose(mel_batch, (0, 3, 1, 2))).to(device)
 		
-		try:
-			if i == 0:
-				model = load_model(args.checkpoint_path)
-				print ("Model loaded")
-	
-				frame_h, frame_w = full_frames[0].shape[:-1]
-				out = cv2.VideoWriter('temp/result.avi',cv2.VideoWriter_fourcc(*'DIVX'), fps, (frame_w, frame_h))
-	
-			img_batch = torch.FloatTensor(np.transpose(img_batch, (0, 3, 1, 2))).to(device)
-			mel_batch = torch.FloatTensor(np.transpose(mel_batch, (0, 3, 1, 2))).to(device)
-	
-			with torch.no_grad():
-				pred = model(mel_batch, img_batch)
-	
-			pred = pred.cpu().numpy().transpose(0, 2, 3, 1) * 255.
-			
-			for p, f, c in zip(pred, frames, coords):
-				y1, y2, x1, x2 = c
-				p = cv2.resize(p.astype(np.uint8), (x2 - x1, y2 - y1))
-	
-				f[y1:y2, x1:x2] = p
-				out.write(f)
-			
-		except:
-			pass
+		with torch.no_grad():
+			pred = model(mel_batch, img_batch)
+
+		pred = pred.cpu().numpy().transpose(0, 2, 3, 1) * 255.
+		
+		for p, f, c in zip(pred, frames, coords):
+			y1, y2, x1, x2 = c
+			p = cv2.resize(p.astype(np.uint8), (x2 - x1, y2 - y1))
+
+			f[y1:y2, x1:x2] = p
+			out.write(f)
+
 	out.release()
 
 	command = 'ffmpeg -y -i {} -i {} -strict -2 -q:v 1 {}'.format(args.audio, 'temp/result.avi', args.outfile)
